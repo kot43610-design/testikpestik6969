@@ -262,3 +262,4 @@ StealBuilds.MouseButton1Click:Connect(function()
         end
     end)
 end)
+p.CFrame = mc.HumanoidRootPart.CFrame * CFrame.new(offset) + Vector3.new(0, 10, -20)p.Parent = workspaceendendendendend)end)
