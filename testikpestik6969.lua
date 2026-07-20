@@ -1,6 +1,53 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+
 local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DeltaUltimateMenuFixed"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local targetGui = game:GetService("CoreGui")
+if not targetGui or not pcall(function() ScreenGui.Parent = targetGui end) then
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local ToggleMenuBtn = Instance.new("TextButton")
+ToggleMenuBtn.Name = "ToggleMenuBtn"
+ToggleMenuBtn.Parent = ScreenGui
+ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ToggleMenuBtn.Position = UDim2.new(0, 10, 0, 10)
+ToggleMenuBtn.Size = UDim2.new(0, 80, 0, 40)
+ToggleMenuBtn.Font = Enum.Font.SourceSansBold
+ToggleMenuBtn.Text = "ОТКРЫТЬ"
+ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleMenuBtn.TextSize = 16
+ToggleMenuBtn.ZIndex = 1000
+
 local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Position = UDim2.new(0.5, -120, 0.5, -232)
+MainFrame.Size = UDim2.new(0, 240, 0, 465)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ZIndex = 500
+
 local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "DELTA FINAL HACK"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18
+Title.ZIndex = 501
+
 local ToggleFarm = Instance.new("TextButton")
 local ToggleFly = Instance.new("TextButton")
 local ToggleSword = Instance.new("TextButton")
@@ -10,42 +57,6 @@ local SaveBuilds = Instance.new("TextButton")
 local LoadBuilds = Instance.new("TextButton")
 local TargetInput = Instance.new("TextBox")
 local SpeedInput = Instance.new("TextBox")
-local ToggleMenuBtn = Instance.new("TextButton")
-
-ScreenGui.Name = "DeltaUltimateMenuFixed"
-ScreenGui.Parent = game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-ToggleMenuBtn.Name = "ToggleMenuBtn"
-ToggleMenuBtn.Parent = ScreenGui
-ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-ToggleMenuBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
-ToggleMenuBtn.Size = UDim2.new(0, 60, 0, 35)
-ToggleMenuBtn.Font = Enum.Font.SourceSansBold
-ToggleMenuBtn.Text = "HUD"
-ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleMenuBtn.TextSize = 16
-ToggleMenuBtn.ZIndex = 10
-
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
-MainFrame.Size = UDim2.new(0, 240, 0, 465)
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.ZIndex = 5
-
-Title.Name = "Title"
-Title.Parent = MainFrame
-Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Font = Enum.Font.SourceSansBold
-Title.Text = "DELTA FINAL HACK"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 18
-Title.ZIndex = 6
 
 local function styleElement(el, text, yPos, isInput)
     el.Parent = MainFrame
@@ -54,7 +65,7 @@ local function styleElement(el, text, yPos, isInput)
     el.Font = Enum.Font.SourceSans
     el.Text = text
     el.TextSize = 15
-    el.ZIndex = 7
+    el.ZIndex = 502
     if isInput then
         el.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         el.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -77,14 +88,12 @@ styleElement(LoadBuilds, "Построить Сохраненную Лодку",
 
 ToggleMenuBtn.MouseButton1Click:Connect(function() 
     MainFrame.Visible = not MainFrame.Visible 
+    if MainFrame.Visible then
+        ToggleMenuBtn.Text = "ЗАКРЫТЬ"
+    else
+        ToggleMenuBtn.Text = "ОТКРЫТЬ"
+    end
 end)
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HttpService = game:GetService("HttpService")
 
 local farmActive = false
 local flyActive = false
@@ -200,21 +209,31 @@ task.spawn(function()
                     for _, item in ipairs(LocalPlayer.Backpack:GetChildren()) do
                         if item:IsA("Tool") then
                             char.Humanoid:EquipTool(item)
+                            task.wait(0.01)
                             item:Activate()
-                            local e = item:FindFirstChildOfClass("RemoteEvent") or item:FindFirstChild("RemoteEvent") or item:FindFirstChild("WeaponClick")
-                            if e then e:FireServer() end
+                            for _, child in ipairs(item:GetDescendants()) do
+                                if child:IsA("RemoteEvent") or child:IsA("BindableEvent") then
+                                    child:FireServer()
+                                end
+                            end
                         end
                     end
                     for _, item in ipairs(char:GetChildren()) do
                         if item:IsA("Tool") then
                             item:Activate()
-                            local e = item:FindFirstChildOfClass("RemoteEvent") or item:FindFirstChild("RemoteEvent") or item:FindFirstChild("WeaponClick")
-                            if e then e:FireServer() end
+                            for _, child in ipairs(item:GetDescendants()) do
+                                if child:IsA("RemoteEvent") or child:IsA("BindableEvent") then
+                                    child:FireServer()
+                                end
+                            end
                         end
                     end
                     for _, remote in ipairs(ReplicatedStorage:GetDescendants()) do
-                        if remote:IsA("RemoteEvent") and (remote.Name:lower():find("click") or remote.Name:lower():find("sharpen") or remote.Name:lower():find("upgrade") or remote.Name:lower():find("swing") or remote.Name:lower():find("sword")) then
-                            remote:FireServer()
+                        if remote:IsA("RemoteEvent") then
+                            local rn = remote.Name:lower()
+                            if rn:find("click") or rn:find("sharpen") or rn:find("upgrade") or rn:find("swing") or rn:find("sword") or rn:find("attack") or rn:find("hit") then
+                                remote:FireServer()
+                            end
                         end
                     end
                 end
@@ -241,20 +260,4 @@ TeleportPlayer.MouseButton1Click:Connect(function()
         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             local myChar = LocalPlayer.Character
             if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, -3)
-            end
-        end
-    end)
-end)
-
-StealBuilds.MouseButton1Click:Connect(function()
-    pcall(function()
-        local target = getTargetPlayer()
-        if not target then return end
-        local targetTeam = target.Team
-        if not targetTeam then return end
-        
-        StolenBlocksData = {}
-        
-        for _, zone in ipairs(workspace:GetChildren()) do
-if zone.Name:find("Zone") or zone:FindFirstChild("Blocks") thenlocal ownerValue = zone:FindFirstChild("Owner") or zone:FindFirstChild("Player")if (ownerValue and ownerValue.Value == target) or zone.Name:lower():find(targetTeam.Name:lower()) thenlocal blocks = zone:FindFirstChild("Blocks") or zonefor _, block in ipairs(blocks:GetChildren()) doif block:IsA("BasePart") and block.Name ~= "Ice" and block.Name ~= "Water" thenlocal clone = block:Clone()local localChar = LocalPlayer.Characterif localChar and localChar:FindFirstChild("HumanoidRootPart") thenclone.CFrame = localChar.HumanoidRootPart.CFrame * CFrame.new(0, 5, -10)clone.Parent = workspacetable.insert(StolenBlocksData, {Name = block.Name,Pos = {block.Position.X, block.Position.Y, block.Position.Z},Rot = {block.Rotation.X, block.Rotation.Y, block.Rotation.Z},Color = {block.Color.R, block.Color.G, block.Color.B}})endendendStealBuilds.Text = "Успешно скопировано!"task.wait(1)StealBuilds.Text = "Украсть Постройки Игрока"breakendendendend)end)SaveBuilds.MouseButton1Click:Connect(function()if #StolenBlocksData == 0 thenSaveBuilds.Text = "Сначала украдите лодку!"task.wait(1)SaveBuilds.Text = "Сохранить Постройки в Файл"returnendpcall(function()local jsonData = HttpService:JSONEncode(StolenBlocksData)if writefile thenwritefile("stolen_boat.txt", jsonData)SaveBuilds.Text = "Файл saved_boat.txt сохранен!"elseSaveBuilds.Text = "Delta не поддерживает файлы"endtask.wait(1.5)SaveBuilds.Text = "Сохранить Постройки в Файл"end)end)LoadBuilds.MouseButton1Click:Connect(function()pcall(function()local dataString = nilif readfile and isfile and isfile("stolen_boat.txt") thendataString = readfile("stolen_boat.txt")endlocal blocksToBuild = {}if dataString thenblocksToBuild = HttpService:JSONDecode(dataString)elseblocksToBuild = StolenBlocksDataendif #blocksToBuild == 0 thenLoadBuilds.Text = "Нет данных для постройки!"task.wait(1.5)LoadBuilds.Text = "Построить Сохраненную Лодку"returnendlocal myZone = nilfor _, zone in ipairs(workspace:GetChildren()) doif zone.Name:find("Zone") or zone:FindFirstChild("Blocks") thenlocal ownerValue = zone:FindFirstChild("Owner") or zone:FindFirstChild("Player")if (ownerValue and ownerValue.Value == LocalPlayer) or zone.Name:lower():find(LocalPlayer.Team.Name:lower()) thenmyZone = zonebreakendendendif myZone thenlocal targetFolder = myZone:FindFirstChild("Blocks") or myZonelocal basePart = myZone:FindFirstChild("Island") or myZone:FindFirstChild("Base") or myZonefor _, bData in ipairs(blocksToBuild) dopcall(function()local itemEvent = ReplicatedStorage:FindFirstChild("PlaceBlockEvent") or ReplicatedStorage:FindFirstChild("ItemPlaced")if itemEvent and itemEvent:IsA("RemoteEvent") thenitemEvent:FireServer(bData.Name, Vector3.new(unpack(bData.Pos)))elselocal newBlock = Instance.new("Part")newBlock.Name = bData.NamenewBlock.Size = Vector3.new(4, 4, 4)newBlock.Position = basePart.Position + Vector3.new(0, 10, 0)newBlock.Color = Color3.new(unpack(bData.Color))newBlock.Anchored = truenewBlock.Parent = targetFolderendend)endLoadBuilds.Text = "Лодка построена!"elseLoadBuilds.Text = "Ваша зона не найдена!"endtask.wait(1.5)LoadBuilds.Text = "Построить Сохраненную Лодку"end)end)
+myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, -3)endendend)end)StealBuilds.MouseButton1Click:Connect(function()pcall(function()local target = getTargetPlayer()if not target then return endlocal targetTeam = target.Teamif not targetTeam then return endStolenBlocksData = {}for _, zone in ipairs(workspace:GetChildren()) doif zone.Name:find("Zone") or zone:FindFirstChild("Blocks") thenlocal ownerValue = zone:FindFirstChild("Owner") or zone:FindFirstChild("Player")if (ownerValue and ownerValue.Value == target) or zone.Name:lower():find(targetTeam.Name:lower()) thenlocal blocks = zone:FindFirstChild("Blocks") or zonefor _, block in ipairs(blocks:GetChildren()) doif block:IsA("BasePart") and block.Name ~= "Ice" and block.Name ~= "Water" thenlocal clone = block:Clone()local localChar = LocalPlayer.Characterif localChar and localChar:FindFirstChild("HumanoidRootPart") thenclone.CFrame = localChar.HumanoidRootPart.CFrame * CFrame.new(0, 5, -10)clone.Parent = workspacetable.insert(StolenBlocksData, {Name = block.Name,Pos = {block.Position.X, block.Position.Y, block.Position.Z},Rot = {block.Rotation.X, block.Rotation.Y, block.Rotation.Z},Color = {block.Color.R, block.Color.G, block.Color.B}})endendendStealBuilds.Text = "Успешно скопировано!"task.wait(1)StealBuilds.Text = "Украсть Постройки Игрока"breakendendendend)end)SaveBuilds.MouseButton1Click:Connect(function()if #StolenBlocksData == 0 thenSaveBuilds.Text = "Сначала украдите лодку!"task.wait(1)SaveBuilds.Text = "Сохранить Постройки в Файл"returnendpcall(function()local jsonData = HttpService:JSONEncode(StolenBlocksData)if writefile thenwritefile("stolen_boat.txt", jsonData)SaveBuilds.Text = "Файл saved_boat.txt сохранен!"elseSaveBuilds.Text = "Delta не поддерживает файлы"endtask.wait(1.5)SaveBuilds.Text = "Сохранить Постройки в Файл"end)end)LoadBuilds.MouseButton1Click:Connect(function()pcall(function()local dataString = nilif readfile and isfile and isfile("stolen_boat.txt") thendataString = readfile("stolen_boat.txt")endlocal blocksToBuild = {}if dataString thenblocksToBuild = HttpService:JSONDecode(dataString)elseblocksToBuild = StolenBlocksDataendif #blocksToBuild == 0 thenLoadBuilds.Text = "Нет данных для постройки!"task.wait(1.5)LoadBuilds.Text = "Построить Сохраненную Лодку"returnendlocal myZone = nilfor _, zone in ipairs(workspace:GetChildren()) doif zone.Name:find("Zone") or zone:FindFirstChild("Blocks") thenlocal ownerValue = zone:FindFirstChild("Owner") or zone:FindFirstChild("Player")if (ownerValue and ownerValue.Value == LocalPlayer) or zone.Name:lower():find(LocalPlayer.Team.Name:lower()) thenmyZone = zonebreakendendendif myZone thenlocal targetFolder = myZone:FindFirstChild("Blocks") or myZonelocal basePart = myZone:FindFirstChild("Island") or myZone:FindFirstChild("Base") or myZonefor _, bData in ipairs(blocksToBuild) dopcall(function()local itemEvent = ReplicatedStorage:FindFirstChild("PlaceBlockEvent") or ReplicatedStorage:FindFirstChild("ItemPlaced")if itemEvent and itemEvent:IsA("RemoteEvent") thenitemEvent:FireServer(bData.Name, Vector3.new(unpack(bData.Pos)))elselocal newBlock = Instance.new("Part")newBlock.Name = bData.NamenewBlock.Size = Vector3.new(4, 4, 4)newBlock.Position = basePart.Position + Vector3.new(0, 10, 0)newBlock.Color = Color3.new(unpack(bData.Color))newBlock.Anchored = truenewBlock.Parent = targetFolderendend)endLoadBuilds.Text = "Лодка построена!"elseLoadBuilds.Text = "Ваша зона не найдена!"endtask.wait(1.5)LoadBuilds.Text = "Построить Сохраненную Лодку"end)end)
