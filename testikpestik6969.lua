@@ -185,7 +185,6 @@ ToggleSword.MouseButton1Click:Connect(function()
     end
 end)
 
--- СКРИПТ: Телепортация к другим игрокам
 TeleportPlayer.MouseButton1Click:Connect(function()
     pcall(function()
         local allPlayers = Players:GetPlayers()
