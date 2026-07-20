@@ -1,146 +1,53 @@
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
+-- ЖЕСТКОЕ ОЖИДАНИЕ ЗАГРУЗКИ ИНТЕРФЕЙСА ДЛЯ МОБИЛЬНОЙ DELTA
 if not game:IsLoaded() then
     game.Loaded:Wait()
 end
 
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 
--- СОЗДАНИЕ НЕБЛОКИРУЕМОГО 3D МЕНЮ В WORKSPACE
-local MenuPart = Instance.new("Part")
-MenuPart.Name = "DeltaSafeMenuPart"
-MenuPart.Size = Vector3.new(3, 4, 0.2)
-MenuPart.Anchored = true
-MenuPart.CanCollide = false
-MenuPart.Transparency = 1
-MenuPart.Parent = workspace
+-- ЗАГРУЗКА ИМПОРТНОЙ МОБИЛЬНОЙ БИБЛИОТЕКИ МЕНЮ (ОБХОД БЛОКИРОВОК)
+local OrionLib = loadstring(game:HttpGet(('https://githubusercontent.com')))()
 
--- Привязка меню к камере игрока, чтобы оно всегда было на экране
-RunService.RenderStepped:Connect(function()
-    local camera = workspace.CurrentCamera
-    if camera then
-        MenuPart.CFrame = camera.CFrame * CFrame.new(0, 0, -4) -- Меню висит прямо перед глазами
-    end
-end)
+local Window = OrionLib:MakeWindow({
+    Name = "DELTA MOBILE MENU", 
+    HidePremium = true, 
+    SaveConfig = false, 
+    IntroEnabled = false
+})
 
-local SurfaceGui = Instance.new("SurfaceGui")
-SurfaceGui.Parent = MenuPart
-SurfaceGui.Adornee = MenuPart
-SurfaceGui.AlwaysOnTop = true
-SurfaceGui.Face = Enum.NormalId.Front
-SurfaceGui.CanvasSize = Vector2.new(220, 310)
-
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = SurfaceGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.BorderSizePixel = 0
-MainFrame.Size = UDim2.new(1, 0, 1, 0)
-
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Parent = MainFrame
-Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-Title.Size = UDim2.new(1, 0, 0, 35)
-Title.Font = Enum.Font.SourceSansBold
-Title.Text = "DELTA 3D MENU"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
-
-local ToggleFarm = Instance.new("TextButton")
-local TeleportPlayer = Instance.new("TextButton")
-local StealBuilds = Instance.new("TextButton")
-local LoadBuilds = Instance.new("TextButton")
-local KeyInput = Instance.new("TextBox")
-
-local function style(el, text, y, isInput)
-    el.Parent = MainFrame
-    el.Position = UDim2.new(0.05, 0, 0, y)
-    el.Size = UDim2.new(0.9, 0, 0, 35)
-    el.Font = Enum.Font.SourceSans
-    el.Text = text
-    el.TextSize = 14
-    if isInput then
-        el.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        el.TextColor3 = Color3.fromRGB(255, 255, 255)
-        el.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-    else
-        el.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-        el.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
-end
-
-style(KeyInput, "", 45, true) KeyInput.PlaceholderText = "Введите проверочный текст"
-style(ToggleFarm, "Фарм Сокровищ: ЗАБЛОКИРОВАНО", 90, false)
-style(TeleportPlayer, "ТП к Игроку", 135, false)
-style(StealBuilds, "Украсть Лодку: ЗАБЛОКИРОВАНО", 180, false)
-style(LoadBuilds, "Загрузить Лодку: ЗАБЛОКИРОВАНО", 225, false)
-
--- ОТДЕЛЬНОЕ ОКНО СПИСКА ИГРОКОВ (ТОЖЕ 3D)
-local ListPart = Instance.new("Part")
-ListPart.Name = "DeltaListPart"
-ListPart.Size = Vector3.new(2.5, 3.5, 0.2)
-ListPart.Anchored = true
-ListPart.CanCollide = false
-ListPart.Transparency = 1
-ListPart.Parent = workspace
-
-RunService.RenderStepped:Connect(function()
-    local camera = workspace.CurrentCamera
-    if camera then
-        ListPart.CFrame = camera.CFrame * CFrame.new(3, 0, -4) -- Список висит справа от основного меню
-    end
-end)
-
-local ListGui = Instance.new("SurfaceGui")
-ListGui.Parent = ListPart
-ListGui.Adornee = ListPart
-ListGui.AlwaysOnTop = true
-ListGui.Face = Enum.NormalId.Front
-ListGui.CanvasSize = Vector2.new(180, 240)
-
-local PlayerListFrame = Instance.new("Frame")
-PlayerListFrame.Parent = ListGui
-PlayerListFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-PlayerListFrame.Size = UDim2.new(1, 0, 1, 0)
-PlayerListFrame.Visible = false
-
-local ListTitle = Instance.new("TextLabel")
-ListTitle.Parent = PlayerListFrame
-ListTitle.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-ListTitle.Size = UDim2.new(1, 0, 0, 30)
-ListTitle.Font = Enum.Font.SourceSansBold
-ListTitle.Text = "ВЫБЕРИТЕ ИГРОКА"
-ListTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-ListTitle.TextSize = 14
-
-local ScrollList = Instance.new("ScrollingFrame")
-ScrollList.Parent = PlayerListFrame
-ScrollList.BackgroundTransparency = 1
-ScrollList.Position = UDim2.new(0, 0, 0, 30)
-ScrollList.Size = UDim2.new(1, 0, 1, -30)
-ScrollList.ScrollBarThickness = 4
-
-local ListLayout = Instance.new("UIListLayout")
-ListLayout.Parent = ScrollList
-ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-ListLayout.Padding = UDim.new(0, 4)
+-- СОЗДАНИЕ ВКЛАДОК
+local AuthTab = Window:MakeTab({ Name = "Авторизация", Icon = "rbxassetid://4483345998", Premium = false })
+local MainTab = Window:MakeTab({ Name = "Функции", Icon = "rbxassetid://4483345998", Premium = false })
 
 local menuUnlocked = false
 local farmActive = false
-local currentMode = ""
-local selectedPlayer = nil
 
-local VirtualUser = game:GetService("VirtualUser")
-LocalPlayer.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new(0,0))
+-- ANTI-AFK (Защита от вылетов)
+pcall(function()
+    local VirtualUser = game:GetService("VirtualUser")
+    LocalPlayer.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new(0,0))
+    end)
 end)
 
+-- Функция обновления списка игроков для кнопок
+local function refreshPlayerList()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(list, p.DisplayName)
+        end
+    end
+    return list
+end
+
+-- ВЫКЛЮЧЕНИЕ КОЛЛИЗИИ ВО ВРЕМЯ ФАРМА
 RunService.Stepped:Connect(function()
     if farmActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid:ChangeState(11)
@@ -158,6 +65,7 @@ local function teleportTo(targetCFrame, speed)
     pcall(function() tween.Completed:Wait() end)
 end
 
+-- ЦИКЛ АВТО-ФАРМА
 task.spawn(function()
     while true do
         if farmActive and menuUnlocked then
@@ -179,55 +87,84 @@ task.spawn(function()
     end
 end)
 
-local function openPlayerList(mode)
-    currentMode = mode
-    for _, child in ipairs(ScrollList:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
+-- 1. СЕКЦИЯ АВТОРИЗАЦИИ (КЛЮЧ)
+local KeyValue = ""
+AuthTab:AddInput({
+    Name = "Проверочный текст",
+    PlaceholderText = "Вставьте текст...",
+    Callback = function(Value)
+        KeyValue = Value
     end
-    
-    local count = 0
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            count = count + 1
-            local PBtn = Instance.new("TextButton")
-            PBtn.Size = UDim2.new(0.9, 0, 0, 30)
-            PBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-            PBtn.Font = Enum.Font.SourceSans
-            PBtn.Text = p.DisplayName
-            PBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            PBtn.TextSize = 14
-            PBtn.Parent = ScrollList
+})
+
+AuthTab:AddButton({
+    Name = "Проверить ключ и открыть функции",
+    Callback = function()
+        if KeyValue == "Введите ник текст (170xe3)" then
+            menuUnlocked = true
+            OrionLib:MakeNotification({
+                Name = "DELTA SYSTEM",
+                Content = "Доступ Разрешен! Перейдите во вкладку 'Функции'.",
+                Time = 4
+            })
             
-            PBtn.MouseButton1Click:Connect(function()
-                selectedPlayer = p
-                PlayerListFrame.Visible = false
-                
-                if currentMode == "TP" then
+            -- ЗАПОЛНЕНИЕ ВКЛАДКИ ФУНКЦИЙ ПОСЛЕ РАЗБЛОКИРОВКИ
+            MainTab:AddToggle({
+                Name = "Авто-Фарм Сокровищ",
+                Default = false,
+                Callback = function(Value)
+                    if menuUnlocked then farmActive = Value end
+                end
+            })
+
+            MainTab:AddDropdown({
+                Name = "Телепортироваться к Игроку",
+                Default = "",
+                Options = refreshPlayerList(),
+                Callback = function(Value)
+                    if not menuUnlocked or Value == "" then return end
                     pcall(function()
-                        if selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                            local myChar = LocalPlayer.Character
-                            if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                                myChar.HumanoidRootPart.CFrame = selectedPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, -3)
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p.DisplayName == Value and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                                local myChar = LocalPlayer.Character
+                                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                                    myChar.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, -3)
+                                end
                             end
                         end
                     end)
-                elseif currentMode == "STEAL" then
+                end
+            })
+
+            MainTab:AddDropdown({
+                Name = "Украсть и Сохранить Лодку",
+                Default = "",
+                Options = refreshPlayerList(),
+                Callback = function(Value)
+                    if not menuUnlocked or Value == "" then return end
                     pcall(function()
+                        local target = nil
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p.DisplayName == Value then target = p break end
+                        end
+                        if not target then return end
+                        
                         local targetFolder = nil
                         for _, v in ipairs(workspace:GetDescendants()) do
-                            if v.Name == "Blocks" and v.Parent:FindFirstChild("Owner") and v.Parent.Owner.Value == selectedPlayer then
+                            if v.Name == "Blocks" and v.Parent:FindFirstChild("Owner") and v.Parent.Owner.Value == target then
                                 targetFolder = v
                                 break
                             end
                         end
                         if not targetFolder then
                             for _, v in ipairs(workspace:GetChildren()) do
-                                if v.Name:find("Zone") and v:FindFirstChild("Owner") and v.Owner.Value == selectedPlayer then
+                                if v.Name:find("Zone") and v:FindFirstChild("Owner") and v.Owner.Value == target then
                                     targetFolder = v:FindFirstChild("Blocks") or v
                                     break
                                 end
                             end
                         end
+                        
                         if targetFolder then
                             local StolenData = {}
                             local targetBase = targetFolder.Parent:FindFirstChild("Base") or targetFolder.Parent:FindFirstChild("Island")
@@ -245,17 +182,33 @@ local function openPlayerList(mode)
                                 end
                             end
                             if writefile and #StolenData > 0 then
-                                writefile("boat_" .. selectedPlayer.Name .. ".txt", HttpService:JSONEncode(StolenData))
-                                StealBuilds.Text = "Сохранено!"
-                                task.wait(1.5)
-                                StealBuilds.Text = "Украсть и Сохранить"
+                                writefile("boat_" .. target.Name .. ".txt", HttpService:JSONEncode(StolenData))
+                                OrionLib:MakeNotification({ Name = "УСПЕХ", Content = "Лодка скопирована в файл!", Time = 3 })
                             end
                         end
                     end)
-                elseif currentMode == "LOAD" then
+                end
+            })
+
+            MainTab:AddDropdown({
+                Name = "Загрузить Лодку на Слот",
+                Default = "",
+                Options = refreshPlayerList(),
+                Callback = function(Value)
+                    if not menuUnlocked or Value == "" then return end
                     pcall(function()
-                        local filename = "boat_" .. selectedPlayer.Name .. ".txt"
-                        if not isfile or not isfile(filename) then return end
+                        local target = nil
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p.DisplayName == Value then target = p break end
+                        end
+                        if not target then return end
+                        
+                        local filename = "boat_" .. target.Name .. ".txt"
+                        if not isfile or not isfile(filename) then
+                            OrionLib:MakeNotification({ Name = "ОШИБКА", Content = "Файл чертежа не найден!", Time = 3 })
+                            return
+                        end
+                        
                         local blocksToBuild = HttpService:JSONDecode(readfile(filename))
                         local myZone = nil
                         for _, z in ipairs(workspace:GetChildren()) do
@@ -264,6 +217,7 @@ local function openPlayerList(mode)
                                 break
                             end
                         end
+                        
                         local myBase = myZone and (myZone:FindFirstChild("Base") or myZone:FindFirstChild("Island"))
                         if myBase and #blocksToBuild > 0 then
                             for _, bData in ipairs(blocksToBuild) do
@@ -281,45 +235,17 @@ local function openPlayerList(mode)
                                     p.Parent = myZone:FindFirstChild("Blocks") or myZone
                                 end)
                             end
+                            OrionLib:MakeNotification({ Name = "ВЕРФЬ", Content = "Сборка завершена!", Time = 3 })
                         end
                     end)
                 end
-            end)
+            })
+        else
+            OrionLib:MakeNotification({
+                Name = "ОШИБКА",
+                Content = "Неверный секретный текст!",
+                Time = 3
+            })
         end
     end
-    ScrollList.CanvasSize = UDim2.new(0, 0, 0, count * 34)
-    PlayerListFrame.Visible = true
-end
-
-TeleportPlayer.MouseButton1Click:Connect(function()
-    if KeyInput.Text == "Введите ник текст (170xe3)" then
-        menuUnlocked = true
-        Title.Text = "DELTA UNLOCKED"
-        ToggleFarm.Text = "Фарм Сокровищ: ВЫКЛ"
-        StealBuilds.Text = "Украсть и Сохранить"
-        LoadBuilds.Text = "Загрузить Лодку"
-        TeleportPlayer.Text = "Доступ Разрешен!"
-        task.wait(1.5)
-        TeleportPlayer.Text = "ТП к Игроку"
-        return
-    end
-
-    if menuUnlocked then
-        openPlayerList("TP")
-    end
-end)
-
-ToggleFarm.MouseButton1Click:Connect(function()
-    if not menuUnlocked then return end
-    farmActive = not farmActive
-    if farmActive then
-        ToggleFarm.Text = "Фарм Сокровищ: ВКЛ"
-        ToggleFarm.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-    else
-        ToggleFarm.Text = "Фарм Сокровищ: ВЫКЛ"
-        ToggleFarm.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-    end
-end)
-
-StealBuilds.MouseButton1Click:Connect(function() if menuUnlocked then openPlayerList("STEAL") end end)
-LoadBuilds.MouseButton1Click:Connect(function() if menuUnlocked then openPlayerList("LOAD") end end)
+})
