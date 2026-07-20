@@ -27,7 +27,6 @@ pcall(function()
     end)
 end)
 
--- Функция поиска игрока по части ника
 local function getTargetPlayer(text)
     if not text or text == "" then return nil end
     for _, p in ipairs(Players:GetPlayers()) do
@@ -44,7 +43,6 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Плавный полет сквозь локации
 local function teleportTo(targetCFrame, speed)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") or not farmActive then return end
@@ -83,7 +81,7 @@ if ChatService.ChatVersion == Enum.ChatVersion.TextChatService then
     ChatService.SendingMessage:Connect(function(textChatMessage)
         local msg = textChatMessage.Text
         
-        if msg == "Введите ник текст (170xe3)" then
+        if msg == "170" then
             textChatMessage.Text = "" -- Стираем, чтобы никто не увидел
             menuUnlocked = true
             printToLocalChat("Доступ Разрешен! Команды скрытого чата разблокированы.")
