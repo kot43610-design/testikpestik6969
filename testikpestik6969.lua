@@ -5,7 +5,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "GitHubDeltaMenuMobile"
+ScreenGui.Name = "GitHubDeltaMenuMobileV4"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -72,6 +72,15 @@ local farmActive = false
 local flyActive = false
 local swordActive = false
 local flySpeed = 50
+
+-- ANTI-AFK СКРИПТ
+pcall(function()
+    local VirtualUser = game:GetService("VirtualUser")
+    LocalPlayer.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new(0,0))
+    end)
+end)
 
 local function getTargetPlayer()
     local text = TargetInput.Text:lower()
@@ -222,27 +231,33 @@ TeleportPlayer.MouseButton1Click:Connect(function()
     end)
 end)
 
+-- ИСПРАВЛЕННАЯ СИСТЕМА КРАЖИ ЛОДКИ ЧЕРЕЗ РЕГЕНЕРАЦИЮ ВНЕШНИХ ПАРТОВ
 StealBuilds.MouseButton1Click:Connect(function()
     pcall(function()
         local target = getTargetPlayer()
-        if not target or not target.Team then return end
-        for _, zone in ipairs(workspace:GetChildren()) do
-            if zone.Name:find("Zone") or zone:FindFirstChild("Blocks") then
-                local ownerValue = zone:FindFirstChild("Owner") or zone:FindFirstChild("Player")
-                if (ownerValue and ownerValue.Value == target) or zone.Name:lower():find(target.Team.Name:lower()) then
-                    local blocks = zone:FindFirstChild("Blocks") or zone
-                    for _, block in ipairs(blocks:GetChildren()) do
-                        if block:IsA("BasePart") and block.Name ~= "Ice" and block.Name ~= "Water" then
-                            local clone = block:Clone()
-                            local localChar = LocalPlayer.Character
-                            if localChar and localChar:FindFirstChild("HumanoidRootPart") then
-                                clone.CFrame = localChar.HumanoidRootPart.CFrame * CFrame.new(0, 5, -10)
-                                clone.Parent = workspace
-                            end
+        if not target then return end
+        
+        for _, folder in ipairs(workspace:GetDescendants()) do
+            if (folder.Name == "Blocks" or folder.Name == "NormalModules") and folder.Parent:FindFirstChild("Owner") and folder.Parent.Owner.Value == target then
+                for _, b in ipairs(folder:GetChildren()) do
+                    if b:IsA("BasePart") then
+                        local p = Instance.new("Part")
+                        p.Size = b.Size
+                        p.Color = b.Color
+                        p.Material = b.Material
+                        p.Transparency = b.Transparency
+                        p.CanCollide = true
+                        p.Anchored = true
+                        
+                        local mc = LocalPlayer.Character
+                        if mc and mc:FindFirstChild("HumanoidRootPart") then
+                            local offset = b.Position - folder.Parent.Base.Position
+                            p.CFrame = mc.HumanoidRootPart.CFrame * CFrame.new(offset) + Vector3.new(0, 10, -20)
+                            p.Parent = workspace
                         end
                     end
-                    break
                 end
+                break
             end
         end
     end)
