@@ -61,11 +61,50 @@ task.spawn(function()
     CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     CloseBtn.TextSize = 14
 
+    local KeyInput = Instance.new("TextBox")
     local ToggleFarm = Instance.new("TextButton")
     local TeleportPlayer = Instance.new("TextButton")
     local StealBuilds = Instance.new("TextButton")
     local LoadBuilds = Instance.new("TextButton")
-    local TargetInput = Instance.new("TextBox")
+
+    -- ОТДЕЛЬНОЕ МЕНЮ СПИСКА ИГРОКОВ
+    local PlayerListFrame = Instance.new("Frame")
+    PlayerListFrame.Name = "PlayerListFrame"
+    PlayerListFrame.Parent = ScreenGui
+    PlayerListFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    PlayerListFrame.BorderSizePixel = 0
+    PlayerListFrame.Position = UDim2.new(0.5, -90, 0.5, -120)
+    PlayerListFrame.Size = UDim2.new(0, 180, 0, 240)
+    PlayerListFrame.Visible = false
+    PlayerListFrame.Active = true
+    PlayerListFrame.Draggable = true
+    PlayerListFrame.ZIndex = 200
+
+    local ListTitle = Instance.new("TextLabel")
+    ListTitle.Name = "ListTitle"
+    ListTitle.Parent = PlayerListFrame
+    ListTitle.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    ListTitle.Size = UDim2.new(1, 0, 0, 30)
+    ListTitle.Font = Enum.Font.SourceSansBold
+    ListTitle.Text = "ВЫБЕРИТЕ ИГРОКА"
+    ListTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ListTitle.TextSize = 14
+    ListTitle.ZIndex = 201
+
+    local ScrollList = Instance.new("ScrollingFrame")
+    ScrollList.Name = "ScrollList"
+    ScrollList.Parent = PlayerListFrame
+    ScrollList.BackgroundTransparency = 1
+    ScrollList.Position = UDim2.new(0, 0, 0, 30)
+    ScrollList.Size = UDim2.new(1, 0, 1, -30)
+    ScrollList.CanvasSize = UDim2.new(0, 0, 0, 0)
+    ScrollList.ScrollBarThickness = 4
+    ScrollList.ZIndex = 202
+
+    local ListLayout = Instance.new("UIListLayout")
+    ListLayout.Parent = ScrollList
+    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    ListLayout.Padding = UDim.new(0, 4)
 
     local function style(el, text, y, isInput)
         el.Parent = MainFrame
@@ -84,7 +123,7 @@ task.spawn(function()
         end
     end
 
-    style(TargetInput, "", 45, true) TargetInput.PlaceholderText = "Введите ник или ключ"
+    style(KeyInput, "", 45, true) KeyInput.PlaceholderText = "Введите проверочный текст"
     style(ToggleFarm, "Фарм Сокровищ: ЗАБЛОКИРОВАНО", 90, false)
     style(TeleportPlayer, "ТП к Игроку", 135, false)
     style(StealBuilds, "Украсть Лодку: ЗАБЛОКИРОВАНО", 180, false)
@@ -102,23 +141,14 @@ task.spawn(function()
 
     local menuUnlocked = false
     local farmActive = false
+    local currentMode = "" -- "TP", "STEAL", "LOAD"
+    local selectedPlayer = nil
 
     local VirtualUser = game:GetService("VirtualUser")
     LocalPlayer.Idled:Connect(function()
         VirtualUser:CaptureController()
         VirtualUser:ClickButton2(Vector2.new(0,0))
     end)
-
-    local function getTargetPlayer()
-        local text = TargetInput.Text
-        if text == "" then return nil end
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and (p.Name:lower():find(text:lower()) or p.DisplayName:lower():find(text:lower())) then
-                return p
-            end
-        end
-        return nil
-    end
 
     RunService.Stepped:Connect(function()
         if farmActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
@@ -158,159 +188,132 @@ task.spawn(function()
         end
     end)
 
-    -- ЛОГИКА АКТИВАЦИИ И ТЕЛЕПОРТАЦИИ
-    TeleportPlayer.MouseButton1Click:Connect(function()
-        -- Проверка на ввод секретного ключа
-        if TargetInput.Text == "170xe3" then
-            menuUnlocked = true
-            Title.Text = "скрипт 170XE UNLOCKED"
-            ToggleFarm.Text = "Фарм Сокровищ: ВЫКЛ"
-            StealBuilds.Text = "Украсть и Сохранить"
-            LoadBuilds.Text = "Загрузить Скопированное"
-            TeleportPlayer.Text = "Доступ Разрешен!"
-            task.wait(1.5)
-            TeleportPlayer.Text = "ТП к Игроку"
-            return
+    -- ФУНКЦИЯ ОБНОВЛЕНИЯ И ОТКРЫТИЯ СПИСКА ИГРОКОВ
+    local function openPlayerList(mode)
+        currentMode = mode
+        for _, child in ipairs(ScrollList:GetChildren()) do
+            if child:IsA("TextButton") then child:Destroy() end
         end
-
-        -- Обычная работа кнопки ТП, если меню уже разблокировано
-        if menuUnlocked then
-            pcall(function()
-                local target = getTargetPlayer()
-                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                    local myChar = LocalPlayer.Character
-                    if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                        myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, -3)
-                    end
-                end
-            end)
-        else
-            TeleportPlayer.Text = "Неверный проверочный текст!"
-            task.wait(1.5)
-            TeleportPlayer.Text = "ТП к Игроку"
-        end
-    end)
-
-    ToggleFarm.MouseButton1Click:Connect(function()
-        if not menuUnlocked then return end
-        farmActive = not farmActive
-        if farmActive then
-            ToggleFarm.Text = "Фарм Сокровищ: ВКЛ"
-            ToggleFarm.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-        else
-            ToggleFarm.Text = "Фарм Сокровищ: ВЫКЛ"
-            ToggleFarm.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-        end
-    end)
-
-    StealBuilds.MouseButton1Click:Connect(function()
-        if not menuUnlocked then return end
-        pcall(function()
-            local target = getTargetPlayer()
-            if not target then return end
-            
-            local targetFolder = nil
-            for _, v in ipairs(workspace:GetDescendants()) do
-                if v.Name == "Blocks" and v.Parent:FindFirstChild("Owner") and v.Parent.Owner.Value == target then
-                    targetFolder = v
-                    break
-                end
-            end
-            
-            if not targetFolder then
-                for _, v in ipairs(workspace:GetChildren()) do
-                    if v.Name:find("Zone") and v:FindFirstChild("Owner") and v.Owner.Value == target then
-                        targetFolder = v:FindFirstChild("Blocks") or v
-                        break
-                    end
-                end
-            end
-            
-            if targetFolder then
-                local StolenData = {}
-                local targetBase = targetFolder.Parent:FindFirstChild("Base") or targetFolder.Parent:FindFirstChild("Island")
+        
+        local count = 0
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer then
+                count = count + 1
+                local PBtn = Instance.new("TextButton")
+                PBtn.Size = UDim2.new(0.9, 0, 0, 30)
+                PBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+                PBtn.Font = Enum.Font.SourceSans
+                PBtn.Text = p.DisplayName
+                PBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                PBtn.TextSize = 14
+                PBtn.ZIndex = 203
+                PBtn.Parent = ScrollList
                 
-                for _, b in ipairs(targetFolder:GetChildren()) do
-                    if b:IsA("BasePart") and b.Name ~= "Ice" and b.Name ~= "Water" then
-                        local offsetPos = targetBase and (b.Position - targetBase.Position) or Vector3.new(0,0,0)
-                        table.insert(StolenData, {
-                            Name = b.Name,
-                            Offset = {offsetPos.X, offsetPos.Y, offsetPos.Z},
-                            Size = {b.Size.X, b.Size.Y, b.Size.Z},
-                            Color = {b.Color.R, b.Color.G, b.Color.B},
-                            Material = b.Material.Name,
-                            Transparency = b.Transparency
-                        })
+                PBtn.MouseButton1Click:Connect(function()
+                    selectedPlayer = p
+                    PlayerListFrame.Visible = false
+                    
+                    -- ДЕЙСТВИЕ ПОСЛЕ ВЫБОРА ИГРОКА
+                    if currentMode == "TP" then
+                        pcall(function()
+                            if selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                local myChar = LocalPlayer.Character
+                                if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                                    myChar.HumanoidRootPart.CFrame = selectedPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, -3)
+                                end
+                            end
+                        end)
+                    elseif currentMode == "STEAL" then
+                        pcall(function()
+                            local targetFolder = nil
+                            for _, v in ipairs(workspace:GetDescendants()) do
+                                if v.Name == "Blocks" and v.Parent:FindFirstChild("Owner") and v.Parent.Owner.Value == selectedPlayer then
+                                    targetFolder = v
+                                    break
+                                end
+                            end
+                            if not targetFolder then
+                                for _, v in ipairs(workspace:GetChildren()) do
+                                    if v.Name:find("Zone") and v:FindFirstChild("Owner") and v.Owner.Value == selectedPlayer then
+                                        targetFolder = v:FindFirstChild("Blocks") or v
+                                        break
+                                    end
+                                end
+                            end
+                            if targetFolder then
+                                local StolenData = {}
+                                local targetBase = targetFolder.Parent:FindFirstChild("Base") or targetFolder.Parent:FindFirstChild("Island")
+                                for _, b in ipairs(targetFolder:GetChildren()) do
+                                    if b:IsA("BasePart") and b.Name ~= "Ice" and b.Name ~= "Water" then
+                                        local offsetPos = targetBase and (b.Position - targetBase.Position) or Vector3.new(0,0,0)
+                                        table.insert(StolenData, {
+                                            Name = b.Name,
+                                            Offset = {offsetPos.X, offsetPos.Y, offsetPos.Z},
+                                            Size = {b.Size.X, b.Size.Y, b.Size.Z},
+                                            Color = {b.Color.R, b.Color.G, b.Color.B},
+                                            Material = b.Material.Name,
+                                            Transparency = b.Transparency
+                                        })
+                                    end
+                                end
+                                if writefile and #StolenData > 0 then
+                                    local filename = "boat_" .. selectedPlayer.Name .. ".txt"
+                                    writefile(filename, HttpService:JSONEncode(StolenData))
+                                    StealBuilds.Text = "Сохранено: " .. selectedPlayer.Name
+                                    task.wait(1.5)
+                                    StealBuilds.Text = "Украсть и Сохранить"
+                                else
+                                    StealBuilds.Text = "Ошибка записи файла!"
+                                    task.wait(1.5)
+                                    StealBuilds.Text = "Украсть и Сохранить"
+                                end
+                            end
+                        end)
+                    elseif currentMode == "LOAD" then
+                        pcall(function()
+                            local filename = "boat_" .. selectedPlayer.Name .. ".txt"
+                            if not isfile or not isfile(filename) then
+                                LoadBuilds.Text = "Файл лодки не найден!"
+                                task.wait(1.5)
+                                LoadBuilds.Text = "Загрузить Скопированное"
+                                return
+                            end
+                            local blocksToBuild = HttpService:JSONDecode(readfile(filename))
+                            local myZone = nil
+                            for _, z in ipairs(workspace:GetChildren()) do
+                                if z.Name:find("Zone") and z:FindFirstChild("Owner") and z.Owner.Value == LocalPlayer then
+                                    myZone = z
+                                    break
+                                end
+                            end
+                            local myBase = myZone and (myZone:FindFirstChild("Base") or myZone:FindFirstChild("Island"))
+                            if myBase and #blocksToBuild > 0 then
+                                for _, bData in ipairs(blocksToBuild) do
+                                    pcall(function()
+                                        local p = Instance.new("Part")
+                                        p.Name = bData.Name
+                                        p.Size = Vector3.new(unpack(bData.Size))
+                                        p.Color = Color3.new(unpack(bData.Color))
+                                        p.Material = Enum.Material[bData.Material]
+                                        p.Transparency = bData.Transparency
+                                        p.CanCollide = true
+                                        p.Anchored = true
+                                        local offset = Vector3.new(unpack(bData.Offset))
+                                        p.CFrame = myBase.CFrame * CFrame.new(offset)
+                                        p.Parent = myZone:FindFirstChild("Blocks") or myZone
+                                    end)
+                                end
+                                LoadBuilds.Text = "Успешно загружено!"
+                            else
+                                LoadBuilds.Text = "Ваша зона не найдена!"
+                            end
+                            task.wait(1.5)
+                            LoadBuilds.Text = "Загрузить Скопированное"
+                        end)
                     end
-                end
-                
-                if writefile and #StolenData > 0 then
-                    local filename = "boat_" .. target.Name .. ".txt"
-                    writefile(filename, HttpService:JSONEncode(StolenData))
-                    StealBuilds.Text = "Сохранено: " .. target.Name
-                    task.wait(1.5)
-                    StealBuilds.Text = "Украсть и Сохранить"
-                else
-                    StealBuilds.Text = "Ошибка записи файла!"
-                    task.wait(1.5)
-                    StealBuilds.Text = "Украсть и Сохранить"
-                end
+                end)
             end
-        end)
-    end)
-
-    LoadBuilds.MouseButton1Click:Connect(function()
-        if not menuUnlocked then return end
-        pcall(function()
-            local target = getTargetPlayer()
-            if not target then 
-                LoadBuilds.Text = "Введите ник цели!"
-                task.wait(1.5)
-                LoadBuilds.Text = "Загрузить Скопированное"
-                return 
-            end
-            
-            local filename = "boat_" .. target.Name .. ".txt"
-            if not isfile or not isfile(filename) then
-                LoadBuilds.Text = "Файл лодки не найден!"
-                task.wait(1.5)
-                LoadBuilds.Text = "Загрузить Скопированное"
-                return
-            end
-            
-            local blocksToBuild = HttpService:JSONDecode(readfile(filename))
-            local myZone = nil
-            for _, z in ipairs(workspace:GetChildren()) do
-                if z.Name:find("Zone") and z:FindFirstChild("Owner") and z.Owner.Value == LocalPlayer then
-                    myZone = z
-                    break
-                end
-            end
-            
-            local myBase = myZone and (myZone:FindFirstChild("Base") or myZone:FindFirstChild("Island"))
-            if myBase and #blocksToBuild > 0 then
-                for _, bData in ipairs(blocksToBuild) do
-                    pcall(function()
-                        local p = Instance.new("Part")
-                        p.Name = bData.Name
-                        p.Size = Vector3.new(unpack(bData.Size))
-                        p.Color = Color3.new(unpack(bData.Color))
-                        p.Material = Enum.Material[bData.Material]
-                        p.Transparency = bData.Transparency
-                        p.CanCollide = true
-                        p.Anchored = true
-                        
-                        local offset = Vector3.new(unpack(bData.Offset))
-                        p.CFrame = myBase.CFrame * CFrame.new(offset)
-                        p.Parent = myZone:FindFirstChild("Blocks") or myZone
-                    end)
-                end
-                LoadBuilds.Text = "Успешно загружено!"
-            else
-                LoadBuilds.Text = "Ваша зона не найдена!"
-            end
-            task.wait(1.5)
-            LoadBuilds.Text = "Загрузить Скопированное"
-        end)
-    end)
-end)
+        end
+        ScrollList.CanvasSize = UDim2.new(0, 0, 0, count * 34)
+        PlayerListFrame.Visible = true
+    end
