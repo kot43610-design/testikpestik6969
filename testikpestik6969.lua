@@ -209,7 +209,7 @@ if ChatService.ChatVersion == Enum.ChatVersion.TextChatService then
     end)
 else
     LocalPlayer.Chatted:Connect(function(msg)
-        if msg == "Введите ник текст (170xe3)" then
+        if msg == "170" then
             menuUnlocked = true
             printToLocalChat("Доступ Разрешен! Команды скрытого чата разблокированы.")
             return
