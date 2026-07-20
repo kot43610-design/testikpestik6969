@@ -67,7 +67,6 @@ task.spawn(function()
     local StealBuilds = Instance.new("TextButton")
     local LoadBuilds = Instance.new("TextButton")
 
-    -- ОТДЕЛЬНОЕ МЕНЮ СПИСКА ИГРОКОВ
     local PlayerListFrame = Instance.new("Frame")
     PlayerListFrame.Name = "PlayerListFrame"
     PlayerListFrame.Parent = ScreenGui
@@ -188,7 +187,6 @@ task.spawn(function()
         end
     end)
 
-    -- ФУНКЦИЯ ОБНОВЛЕНИЯ И ОТКРЫТИЯ СПИСКА ИГРОКОВ
     local function openPlayerList(mode)
         currentMode = mode
         for _, child in ipairs(ScrollList:GetChildren()) do
@@ -213,7 +211,6 @@ task.spawn(function()
                     selectedPlayer = p
                     PlayerListFrame.Visible = false
                     
-                    -- ДЕЙСТВИЕ ПОСЛЕ ВЫБОРА ИГРОКА
                     if currentMode == "TP" then
                         pcall(function()
                             if selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
