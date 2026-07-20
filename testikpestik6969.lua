@@ -3,6 +3,7 @@ local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "DeltaMobileFinalMenu"
@@ -26,8 +27,8 @@ MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -110, 0.5, -110)
-MainFrame.Size = UDim2.new(0, 220, 0, 220)
+MainFrame.Position = UDim2.new(0.5, -110, 0.5, -135)
+MainFrame.Size = UDim2.new(0, 220, 0, 270)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -55,6 +56,7 @@ CloseBtn.TextSize = 14
 local ToggleFarm = Instance.new("TextButton")
 local TeleportPlayer = Instance.new("TextButton")
 local StealBuilds = Instance.new("TextButton")
+local LoadBuilds = Instance.new("TextButton")
 local TargetInput = Instance.new("TextBox")
 
 local function style(el, text, y, isInput)
@@ -77,7 +79,8 @@ end
 style(TargetInput, "", 45, true) TargetInput.PlaceholderText = "Ник (частично)"
 style(ToggleFarm, "Фарм Сокровищ: ВЫКЛ", 90, false)
 style(TeleportPlayer, "ТП к Игроку", 135, false)
-style(StealBuilds, "Украсть Лодку", 180, false)
+style(StealBuilds, "Украсть и Сохранить", 180, false)
+style(LoadBuilds, "Загрузить Скопированное", 225, false)
 
 CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
@@ -192,44 +195,87 @@ StealBuilds.MouseButton1Click:Connect(function()
         end
         
         if targetFolder then
+            local StolenData = {}
+            local targetBase = targetFolder.Parent:FindFirstChild("Base") or targetFolder.Parent:FindFirstChild("Island")
+            
             for _, b in ipairs(targetFolder:GetChildren()) do
                 if b:IsA("BasePart") and b.Name ~= "Ice" and b.Name ~= "Water" then
-                    local itemPlaced = ReplicatedStorage:FindFirstChild("PlaceBlockEvent") or ReplicatedStorage:FindFirstChild("ItemPlaced")
-                    if itemPlaced and itemPlaced:IsA("RemoteEvent") then
-                        itemPlaced:FireServer(b.Name, b.Position, b.Rotation, b.Color)
-                    else
-                        local p = Instance.new("Part")
-                        p.Size = b.Size
-                        p.Color = b.Color
-                        p.Material = b.Material
-                        p.Transparency = b.Transparency
-                        p.CanCollide = true
-                        p.Anchored = true
-                        
-                        local mc = LocalPlayer.Character
-                        if mc and mc:FindFirstChild("HumanoidRootPart") then
-                            local myZone = nil
-                            for _, z in ipairs(workspace:GetChildren()) do
-                                if z.Name:find("Zone") and z:FindFirstChild("Owner") and z.Owner.Value == LocalPlayer then
-                                    myZone = z
-                                    break
-                                end
-                            end
-                            local myBase = myZone and (myZone:FindFirstChild("Base") or myZone:FindFirstChild("Island"))
-                            local targetBase = targetFolder.Parent:FindFirstChild("Base") or targetFolder.Parent:FindFirstChild("Island")
-                            
-                            if myBase and targetBase then
-                                local offset = b.Position - targetBase.Position
-                                p.CFrame = myBase.CFrame * CFrame.new(offset)
-                                p.Parent = myZone:FindFirstChild("Blocks") or myZone
-                            else
-                                p.CFrame = mc.HumanoidRootPart.CFrame * CFrame.new(0, 5, -10)
-                                p.Parent = workspace
-                            end
-                        end
-                    end
+                    local offsetPos = targetBase and (b.Position - targetBase.Position) or Vector3.new(0,0,0)
+                    table.insert(StolenData, {
+                        Name = b.Name,
+                        Offset = {offsetPos.X, offsetPos.Y, offsetPos.Z},
+                        Size = {b.Size.X, b.Size.Y, b.Size.Z},
+                        Color = {b.Color.R, b.Color.G, b.Color.B},
+                        Material = b.Material.Name,
+                        Transparency = b.Transparency
+                    })
                 end
+            end
+            
+            if writefile and #StolenData > 0 then
+                local filename = "boat_" .. target.Name .. ".txt"
+                writefile(filename, HttpService:JSONEncode(StolenData))
+                StealBuilds.Text = "Сохранено: " .. target.Name
+                task.wait(1.5)
+                StealBuilds.Text = "Украсть и Сохранить"
+            else
+                StealBuilds.Text = "Ошибка записи файла!"
+                task.wait(1.5)
+                StealBuilds.Text = "Украсть и Сохранить"
             end
         end
     end)
 end)
+
+LoadBuilds.MouseButton1Click:Connect(function()
+    pcall(function()
+        local target = getTargetPlayer()
+        if not target then 
+            LoadBuilds.Text = "Введите ник цели!"
+            task.wait(1.5)
+            LoadBuilds.Text = "Загрузить Скопированное"
+            return 
+        end
+        
+        local filename = "boat_" .. target.Name .. ".txt"
+        if not isfile or not isfile(filename) then
+            LoadBuilds.Text = "Файл лодки не найден!"
+            task.wait(1.5)
+            LoadBuilds.Text = "Загрузить Скопированное"
+            return
+        end
+        
+        local blocksToBuild = HttpService:JSONDecode(readfile(filename))
+        local myZone = nil
+        for _, z in ipairs(workspace:GetChildren()) do
+            if z.Name:find("Zone") and z:FindFirstChild("Owner") and z.Owner.Value == LocalPlayer then
+                myZone = z
+                break
+            end
+        end
+        
+        local myBase = myZone and (myZone:FindFirstChild("Base") or myZone:FindFirstChild("Island"))
+        if myBase and #blocksToBuild > 0 then
+            for _, bData in ipairs(blocksToBuild) do
+                pcall(function()
+                    local p = Instance.new("Part")
+                    p.Name = bData.Name
+                    p.Size = Vector3.new(unpack(bData.Size))
+                    p.Color = Color3.new(unpack(bData.Color))
+                    p.Material = Enum.Material[bData.Material]
+                    p.Transparency = bData.Transparency
+                    p.CanCollide = true
+                    p.Anchored = true
+                    
+                    local offset = Vector3.new(unpack(bData.Offset))
+p.CFrame = myBase.CFrame * CFrame.new(offset)
+                                p.Parent = myZone:FindFirstChild("Blocks") or myZoneend)
+                            end
+                            LoadBuilds.Text = "Успешно загружено!"
+                        else
+                        LoadBuilds.Text = "Ваша зона не найдена!"
+                        end
+                    task.wait(1.5)
+                    LoadBuilds.Text = "Загрузить Скопированное"
+                    end)
+        end)
