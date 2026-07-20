@@ -1,105 +1,28 @@
+local Library = loadstring(game:HttpGet("https://githubusercontent.com"))()
+local Window = Library.CreateLib("DELTA MULTI-HACK", "DarkTheme")
+
+local MainTab = Window:NewTab("Основное")
+local PlayersTab = Window:NewTab("Игроки")
+local BuildTab = Window:NewTab("Постройки")
+
+local MainSection = MainTab:NewSection("Авто-Фарм и Функции")
+local PlayersSection = PlayersTab:NewSection("Телепортация")
+local BuildSection = BuildTab:NewSection("Кража лодок")
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DeltaMobileFix"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-local ToggleMenuBtn = Instance.new("TextButton")
-ToggleMenuBtn.Name = "ToggleMenuBtn"
-ToggleMenuBtn.Parent = ScreenGui
-ToggleMenuBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-ToggleMenuBtn.Position = UDim2.new(0, 15, 0, 80)
-ToggleMenuBtn.Size = UDim2.new(0, 90, 0, 40)
-ToggleMenuBtn.Font = Enum.Font.SourceSansBold
-ToggleMenuBtn.Text = "ОТКРЫТЬ"
-ToggleMenuBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleMenuBtn.TextSize = 16
-
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.Position = UDim2.new(0.5, -110, 0.5, -190)
-MainFrame.Size = UDim2.new(0, 220, 0, 380)
-MainFrame.Visible = false
-MainFrame.Active = true
-MainFrame.Draggable = true
-
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Parent = MainFrame
-Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-Title.Size = UDim2.new(1, 0, 0, 35)
-Title.Font = Enum.Font.SourceSansBold
-Title.Text = "DELTA CHEATS"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
-
-local ToggleFarm = Instance.new("TextButton")
-local ToggleFly = Instance.new("TextButton")
-local ToggleSword = Instance.new("TextButton")
-local TeleportPlayer = Instance.new("TextButton")
-local StealBuilds = Instance.new("TextButton")
-local TargetInput = Instance.new("TextBox")
-local SpeedInput = Instance.new("TextBox")
-
-local function style(el, text, y, isInput)
-    el.Parent = MainFrame
-    el.Position = UDim2.new(0.05, 0, 0, y)
-    el.Size = UDim2.new(0.9, 0, 0, 35)
-    el.Font = Enum.Font.SourceSans
-    el.Text = text
-    el.TextSize = 14
-    if isInput then
-        el.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        el.TextColor3 = Color3.fromRGB(255, 255, 255)
-        el.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-    else
-        el.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        el.TextColor3 = Color3.fromRGB(255, 255, 255)
-    end
-end
-
-style(TargetInput, "", 45, true) TargetInput.PlaceholderText = "Ник (частично)"
-style(SpeedInput, "50", 90, true) SpeedInput.PlaceholderText = "Скорость полета"
-style(ToggleFarm, "Авто-Фарм: ВЫКЛ", 135, false)
-style(ToggleFly, "Полет: ВЫКЛ", 180, false)
-style(ToggleSword, "Авто-Заточка: ВЫКЛ", 225, false)
-style(TeleportPlayer, "ТП к Игроку", 270, false)
-style(StealBuilds, "Украсть Постройку", 315, false)
-
-ToggleMenuBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
-    ToggleMenuBtn.Text = MainFrame.Visible and "ЗАКРЫТЬ" or "ОТКРЫТЬ"
-end)
-
 local farmActive = false
 local flyActive = false
 local swordActive = false
 local flySpeed = 50
+local targetPlayerName = ""
 
-SpeedInput.FocusLost:Connect(function()
-    local num = tonumber(SpeedInput.Text)
-    if num then flySpeed = num else flySpeed = 50 SpeedInput.Text = "50" end
-end)
-
-local function getTargetPlayer()
-    local text = TargetInput.Text:lower()
-    if text == "" then return nil end
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and (p.Name:lower():find(text) or p.DisplayName:lower():find(text)) then
-            return p
-        end
-    end
-    return nil
-end
-
-RunService.Stepped:Connect(function()
+local SteeringConnection
+SteeringConnection = RunService.Stepped:Connect(function()
     if farmActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid:ChangeState(11)
     end
@@ -137,15 +60,8 @@ task.spawn(function()
     end
 end)
 
-ToggleFarm.MouseButton1Click:Connect(function()
-    farmActive = not farmActive
-    if farmActive then
-        ToggleFarm.Text = "Авто-Фарм: ВКЛ"
-        ToggleFarm.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-    else
-        ToggleFarm.Text = "Авто-Фарм: ВЫКЛ"
-        ToggleFarm.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    end
+MainSection:NewToggle("Авто-Фарм Сокровищ", "Автоматический сбор золота", function(state)
+    farmActive = state
 end)
 
 local BodyVelocity = Instance.new("BodyVelocity")
@@ -170,15 +86,12 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-ToggleFly.MouseButton1Click:Connect(function()
-    flyActive = not flyActive
-    if flyActive then
-        ToggleFly.Text = "Полет: ВКЛ"
-        ToggleFly.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-    else
-        ToggleFly.Text = "Полет: ВЫКЛ"
-        ToggleFly.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    end
+MainSection:NewToggle("Режим Полета", "Позволяет летать сквозь стены", function(state)
+    flyActive = state
+end)
+
+MainSection:NewSlider("Скорость Полета", "Изменение скорости перемещения", 250, 10, function(s)
+    flySpeed = s
 end)
 
 task.spawn(function()
@@ -214,18 +127,25 @@ task.spawn(function()
     end
 end)
 
-ToggleSword.MouseButton1Click:Connect(function()
-    swordActive = not swordActive
-    if swordActive then
-        ToggleSword.Text = "Авто-Заточка: ВКЛ"
-        ToggleSword.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-    else
-        ToggleSword.Text = "Авто-Заточка: ВЫКЛ"
-        ToggleSword.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    end
+MainSection:NewToggle("Авто-Точение Шпаги", "Автоматические клики и заточка", function(state)
+    swordActive = state
 end)
 
-TeleportPlayer.MouseButton1Click:Connect(function()
+local function getTargetPlayer()
+    if targetPlayerName == "" then return nil end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and (p.Name:lower():find(targetPlayerName:lower()) or p.DisplayName:lower():find(targetPlayerName:lower())) then
+            return p
+        end
+    end
+    return nil
+end
+
+PlayersSection:NewTextBox("Ник Игрока", "Введите часть имени или полный ник", function(text)
+    targetPlayerName = text
+end)
+
+PlayersSection:NewButton("Телепортироваться", "ТП к указанному выше игроку", function()
     pcall(function()
         local target = getTargetPlayer()
         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
@@ -237,7 +157,7 @@ TeleportPlayer.MouseButton1Click:Connect(function()
     end)
 end)
 
-StealBuilds.MouseButton1Click:Connect(function()
+BuildSection:NewButton("Украсть лодку игрока", "Скопирует постройку цели на вашу позицию", function()
     pcall(function()
         local target = getTargetPlayer()
         if not target or not target.Team then return end
@@ -261,4 +181,4 @@ StealBuilds.MouseButton1Click:Connect(function()
             end
         end
     end)
-    end)
+end)
